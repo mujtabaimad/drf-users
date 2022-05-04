@@ -2,11 +2,12 @@ from rest_framework import generics, status
 from django.urls import reverse
 import jwt
 from django.conf import settings
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.sites.shortcuts import get_current_site
 
-from authentication.serializers import UserSerializer, VerifyEmailSerializer
+from authentication.serializers import ChangePasswordSerializer, LoginSerializer, UserSerializer, VerifyEmailSerializer
 from .models import User
 from authentication.utils import sendRegistrationEmail
 
@@ -52,3 +53,26 @@ class VerifyEmailView(generics.GenericAPIView):
             return Response({'error': 'invalid_link', 'error_message':'Invalid link', 'success': False}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': 'general_error', 'error_message':str(e), 'success': False}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+    
+    def post(self, request):
+        serializer = self.serializer_class(data = request.data)
+        serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class ChangePasswordView(generics.GenericAPIView):
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        return Response({'success': True}, status=status.HTTP_200_OK)
