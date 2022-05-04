@@ -5,9 +5,10 @@ from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import viewsets
 from django.contrib.sites.shortcuts import get_current_site
 
-from authentication.serializers import ChangePasswordSerializer, LoginSerializer, UserSerializer, VerifyEmailSerializer
+from authentication.serializers import AuthenticatedUserSerializer, ChangePasswordSerializer, LoginSerializer, UnAuthenticatedUserSerializer, UserSerializer, VerifyEmailSerializer
 from .models import User
 from authentication.utils import sendRegistrationEmail
 
@@ -76,3 +77,14 @@ class ChangePasswordView(generics.GenericAPIView):
         user = serializer.save()
 
         return Response({'success': True}, status=status.HTTP_200_OK)
+
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.user and self.request.user.is_authenticated:
+            return AuthenticatedUserSerializer
+        else:
+            return UnAuthenticatedUserSerializer
